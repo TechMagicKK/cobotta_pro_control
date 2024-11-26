@@ -51,7 +51,7 @@ CallbackReturn
 CobottaProControl::on_configure(const rclcpp_lifecycle::State &)
 {
   rc9_controller_->get_controller_handler();
-  rc9_controller_->get_robot_identifier();
+  rc9_controller_->get_robot_handler();
   RCLCPP_INFO(get_logger(), "on_configure() is called.");
   return CallbackReturn::SUCCESS;
 }

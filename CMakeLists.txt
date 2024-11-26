@@ -14,13 +14,15 @@ find_package(rclcpp_lifecycle REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(bcap_service_interfaces REQUIRED)
 find_package(cobotta_pro_control_interfaces REQUIRED)
+find_package(denso_robot_core_interfaces REQUIRED)
 
 # ライブラリを作成
 add_library(cobotta_pro_control_lib
   src/rc9_controller.cpp
 )
 ament_target_dependencies(cobotta_pro_control_lib
-  rclcpp rclcpp_lifecycle std_msgs bcap_core bcap_service_interfaces cobotta_pro_control_interfaces
+  rclcpp rclcpp_lifecycle std_msgs bcap_core 
+  bcap_service_interfaces cobotta_pro_control_interfaces denso_robot_core_interfaces
 )
 target_include_directories(cobotta_pro_control_lib
   PUBLIC

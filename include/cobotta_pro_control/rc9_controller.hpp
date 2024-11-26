@@ -12,8 +12,9 @@
 
 #include "bcap_service_interfaces/srv/bcap.hpp"
 #include "bcap_service_interfaces/msg/variant.hpp"
-
-#include "cobotta_pro_control/bcap_client.hpp"
+#include "std_msgs/msg/string.hpp"
+#include "std_msgs/msg/int32.hpp"
+#include "cobotta_pro_control/ros_client.hpp"
 
 
 class RC9Controller
@@ -21,17 +22,21 @@ class RC9Controller
 public:
     explicit RC9Controller(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node);
     void get_controller_handler();
-    void get_robot_identifier();
+    void get_robot_handler();
     bool take_arm(uint16_t arm_group);
     bool set_motor(bool enable);
 
 private:
+    void current_mode_cb_(std_msgs::msg::Int32::ConstSharedPtr msg);
+
     std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
     std::shared_ptr<rclcpp::TimerBase> timer_;
 
     int16_t controller_handler_;
-    std::string robot_indentifier_;
-    BCapClient bcap_client_;
+    int16_t robot_handler_;
+    ROSClient ros_client_;
+    std::string current_mode_;
+    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_sub_;
 };
 
 #endif // RC9_CONTROLLER_HPP

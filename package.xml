@@ -14,6 +14,7 @@
   <depend>bcap_core</depend>
   <depend>bcap_service_interfaces</depend>
   <depend>cobotta_pro_control_interfaces</depend>
+  <depend>denso_robot_core_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
