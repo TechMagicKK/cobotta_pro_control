@@ -8,17 +8,19 @@ endif()
 
 # 必要なパッケージを見つける
 find_package(ament_cmake REQUIRED)
+find_package(bcap_core REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_lifecycle REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(bcap_service_interfaces REQUIRED)
+find_package(cobotta_pro_control_interfaces REQUIRED)
 
 # ライブラリを作成
 add_library(cobotta_pro_control_lib
-  src/rc9_driver.cpp
+  src/rc9_controller.cpp
 )
 ament_target_dependencies(cobotta_pro_control_lib
-  rclcpp rclcpp_lifecycle std_msgs bcap_service_interfaces
+  rclcpp rclcpp_lifecycle std_msgs bcap_core bcap_service_interfaces cobotta_pro_control_interfaces
 )
 target_include_directories(cobotta_pro_control_lib
   PUBLIC
@@ -30,14 +32,7 @@ target_include_directories(cobotta_pro_control_lib
 add_executable(cobotta_pro_control
   src/cobotta_pro_control.cpp
 )
-ament_target_dependencies(cobotta_pro_control
-  rclcpp rclcpp_lifecycle std_msgs bcap_service_interfaces
-)
-target_include_directories(cobotta_pro_control
-  PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-    $<INSTALL_INTERFACE:include>
-)
+
 # ライブラリをリンク
 target_link_libraries(cobotta_pro_control
   cobotta_pro_control_lib

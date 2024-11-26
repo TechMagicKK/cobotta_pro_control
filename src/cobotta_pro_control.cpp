@@ -7,15 +7,42 @@ CobottaProControl::CobottaProControl(const std::string & node_name, bool intra_p
 
 void CobottaProControl::initialize()
 {
+  this->initialize_controller();
+  this->initialize_ros_services();
+}
+
+void CobottaProControl::initialize_controller()
+{
   try {
-    rc9_driver_ = std::make_shared<RC9Driver>(shared_from_this());
-    // srv_ = this->create_service<TakeArm>
-
-
+    rc9_controller_ = std::make_shared<RC9Controller>(shared_from_this());
   } catch (const std::exception & e) {
-    RCLCPP_ERROR(get_logger(), "Failed to initialize RC9Driver: %s", e.what());
+    RCLCPP_ERROR(get_logger(), "Failed to initialize RC9Controller: %s", e.what());
     throw;
   }
+}
+
+void CobottaProControl::initialize_ros_services() 
+{
+    take_arm_srv_ = this->create_service<cobotta_pro_control_interfaces::srv::TakeArm>(
+      "take_arm", 
+      std::bind(&CobottaProControl::take_arm, this, std::placeholders::_1, std::placeholders::_2));
+    set_motor_srv_ = this->create_service<cobotta_pro_control_interfaces::srv::SetMotor>(
+      "set_motor", 
+      std::bind(&CobottaProControl::set_motor, this, std::placeholders::_1, std::placeholders::_2));
+}
+
+void CobottaProControl::take_arm(
+    const std::shared_ptr<cobotta_pro_control_interfaces::srv::TakeArm::Request> request, 
+    std::shared_ptr<cobotta_pro_control_interfaces::srv::TakeArm::Response> response) 
+{
+// pass
+}
+
+void CobottaProControl::set_motor(
+    const std::shared_ptr<cobotta_pro_control_interfaces::srv::SetMotor::Request> request, 
+    std::shared_ptr<cobotta_pro_control_interfaces::srv::SetMotor::Response> response) 
+{
+// pass
 }
 
 using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
@@ -23,6 +50,8 @@ using CallbackReturn = rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface
 CallbackReturn
 CobottaProControl::on_configure(const rclcpp_lifecycle::State &)
 {
+  rc9_controller_->get_controller_handler();
+  rc9_controller_->get_robot_identifier();
   RCLCPP_INFO(get_logger(), "on_configure() is called.");
   return CallbackReturn::SUCCESS;
 }
@@ -31,8 +60,6 @@ CallbackReturn
 CobottaProControl::on_activate(const rclcpp_lifecycle::State &)
 {
   try {
-    uint16_t controller_handle = rc9_driver_->get_controller_handle();
-    RCLCPP_INFO(get_logger(), "RC9 controller handle: %u", controller_handle);
     RCLCPP_INFO(get_logger(), "on_activate() is called.");
     return CallbackReturn::SUCCESS;
   } catch (const std::exception & e) {
@@ -71,11 +98,9 @@ int main(int argc, char * argv[])
   node->initialize();
   executor.add_node(node->get_node_base_interface());
 
-  // スピン開始
   RCLCPP_INFO(node->get_logger(), "Launched cobotta_pro_control node...");
   executor.spin();
 
-  // シャットダウン処理
   rclcpp::shutdown();
   return 0;
 }
