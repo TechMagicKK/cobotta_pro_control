@@ -25,6 +25,8 @@ public:
     void get_robot_handler();
     bool take_arm(uint16_t arm_group);
     bool set_motor(bool enable);
+    void slave_move(const float* goal);
+    bool change_mode(uint16_t mode);
 
 private:
     void current_mode_cb_(std_msgs::msg::Int32::ConstSharedPtr msg);
@@ -32,11 +34,12 @@ private:
     std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
     std::shared_ptr<rclcpp::TimerBase> timer_;
 
+    ROSClient ros_client_;
+    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_sub_;
+
     int16_t controller_handler_;
     int16_t robot_handler_;
-    ROSClient ros_client_;
     std::string current_mode_;
-    rclcpp::Subscription<std_msgs::msg::Int32>::SharedPtr mode_sub_;
 };
 
 #endif // RC9_CONTROLLER_HPP

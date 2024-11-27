@@ -7,7 +7,7 @@ RC9Controller::RC9Controller(const std::shared_ptr<rclcpp_lifecycle::LifecycleNo
 {
     mode_sub_ = node_->create_subscription<std_msgs::msg::Int32>(
         "CurMode", 
-        10, 
+        10,
         std::bind(&RC9Controller::current_mode_cb_, this, std::placeholders::_1)
     );
 }
@@ -87,6 +87,74 @@ void RC9Controller::get_robot_handler()
             robot_handler_ = static_cast<int16_t>(std::stoi(res.vnt_ret.value));
             RCLCPP_INFO(node_->get_logger(), "Robot Identifier: %d", robot_handler_);
         }
+    }
+}
+
+bool RC9Controller::change_mode(uint16_t mode)
+{
+    auto response = ros_client_.change_mode(mode);
+    if (!response.has_value()) {
+        RCLCPP_WARN(node_->get_logger(), "Response is empty");
+        return false;
+    } else {
+        const auto &res = response.value();
+        if (res.hresult != 0) {
+            RCLCPP_ERROR(node_->get_logger(), "Failed changing to slave mode.");
+            return false;
+        } else {
+            RCLCPP_INFO(node_->get_logger(), "Changed to slave mode.");
+        }
+    }
+    return true;
+}
+
+void RC9Controller::slave_move(const float* goal)
+{
+    if (!this->change_mode(1))
+    {
+        return;
+    }
+
+    std::vector<bcap_service_interfaces::msg::Variant> vnt_args;
+
+    bcap_service_interfaces::msg::Variant var;
+    var.vt = VT_UI4;
+    var.value = robot_handler_;
+    vnt_args.push_back(var);
+
+    var.vt = VT_BSTR;
+    var.value = "slvMove";
+    vnt_args.push_back(var);
+
+    // vector_to_string
+    std::string goal_pos;
+    size_t size = sizeof(goal) / sizeof(goal[0]);
+    for (size_t i = 0; i < size; ++i) {
+        goal_pos += std::to_string(goal[i]);
+        if (i < size - 1) {
+            goal_pos += ", ";
+        }
+    }
+    var.vt = VT_R8;
+    var.value = goal_pos;
+    vnt_args.push_back(var);
+
+    auto response = this->ros_client_.call_bcap_service(ID_ROBOT_EXECUTE, vnt_args);
+    if (!response.has_value()) {
+        RCLCPP_WARN(node_->get_logger(), "Response is empty.");
+        return;
+    } else {
+        const auto &res = response.value();  // または *response
+        if (res.hresult != 0) {
+            RCLCPP_ERROR(node_->get_logger(), "Failed to move in slave mode.");
+        } else {
+            RCLCPP_INFO(node_->get_logger(), "Moved: %s", res.vnt_ret.value);
+        }
+    }
+
+    if (!this->change_mode(0))
+    {
+        return;
     }
 }
 
