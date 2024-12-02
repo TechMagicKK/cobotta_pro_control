@@ -12,8 +12,9 @@ public:
     explicit ROSClient(const std::shared_ptr<rclcpp_lifecycle::LifecycleNode>& node)
     : node_(node)
     {
-        bcap_client_ = node_->create_client<bcap_service_interfaces::srv::Bcap>("bcap_service");
-        change_mode_client_ = node->create_client<denso_robot_core_interfaces::srv::ChangeMode>("change_mode");
+        client_cb_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+        bcap_client_ = node_->create_client<bcap_service_interfaces::srv::Bcap>("/cobotta/bcap_service", rmw_qos_profile_services_default, client_cb_group_);
+        change_mode_client_ = node_->create_client<denso_robot_core_interfaces::srv::ChangeMode>("/cobotta/change_mode", rmw_qos_profile_services_default, client_cb_group_);
     }
 
     std::optional<bcap_service_interfaces::srv::Bcap::Response>
@@ -32,8 +33,9 @@ public:
         request->func_id = func_id;
         request->vnt_args = vnt_args;
 
-        auto future = bcap_client_->async_send_request(request);
-        if (rclcpp::spin_until_future_complete(node_, future) == rclcpp::FutureReturnCode::SUCCESS) {
+
+        auto future = this->bcap_client_->async_send_request(request);
+        if (future.wait_for(std::chrono::seconds(5)) != std::future_status::timeout)  {
             const auto &response = future.get();
             RCLCPP_INFO(node_->get_logger(), "Service call succeeded, response received.");
             return *response;
@@ -59,7 +61,7 @@ public:
         request->mode = mode;
 
         auto future = change_mode_client_->async_send_request(request);
-        if (rclcpp::spin_until_future_complete(node_, future) == rclcpp::FutureReturnCode::SUCCESS) {
+        if (future.wait_for(std::chrono::seconds(3)) != std::future_status::timeout) {
             const auto &response = future.get();
             RCLCPP_INFO(node_->get_logger(), "Service call succeeded, response received.");
             return *response;
@@ -71,6 +73,8 @@ public:
 
 private:
     std::shared_ptr<rclcpp_lifecycle::LifecycleNode> node_;
+    std::shared_ptr<rclcpp::executors::MultiThreadedExecutor> executor_;
+    rclcpp::CallbackGroup::SharedPtr client_cb_group_;
     rclcpp::Client<bcap_service_interfaces::srv::Bcap>::SharedPtr bcap_client_;
     rclcpp::Client<denso_robot_core_interfaces::srv::ChangeMode>::SharedPtr change_mode_client_;
 };

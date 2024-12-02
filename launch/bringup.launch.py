@@ -17,7 +17,7 @@ def generate_launch_description():
                 )
             ]
         ),
-        launch_arguments={"model": "cobotta", "ip_address": "192.168.42.60"}.items(),
+        launch_arguments={"model": "cobotta", "ip_address": "192.168.0.102"}.items(),
     )
     ld.add_action(bcap_service)
 

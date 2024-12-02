@@ -28,11 +28,11 @@ void RC9Controller::get_controller_handler()
     vnt_args.push_back(var);
 
     var.vt = VT_BSTR;
-    var.value = "CaoProv.DENSO.VRC";
+    var.value = "CaoProv.DENSO.VRC9";
     vnt_args.push_back(var);
 
     var.vt = VT_BSTR;
-    var.value = "localhost";
+    var.value = "192.168.0.102";
     vnt_args.push_back(var);
 
     var.vt = VT_BSTR;
@@ -62,7 +62,7 @@ void RC9Controller::get_robot_handler()
 
     bcap_service_interfaces::msg::Variant var;
     var.vt = VT_UI4;
-    var.value = controller_handler_;
+    var.value = "109";  // "" string type, important!!
     vnt_args.push_back(var);
 
     var.vt = VT_BSTR;
@@ -76,36 +76,18 @@ void RC9Controller::get_robot_handler()
     auto response = this->ros_client_.call_bcap_service(ID_CONTROLLER_GETROBOT, vnt_args);
     if (!response.has_value()) {
         robot_handler_ = -1;
-        RCLCPP_WARN(node_->get_logger(), "Response is empty. Setting robot indentifier to -1.");
+        RCLCPP_WARN(node_->get_logger(), "Response is empty. Setting robot handler to -1.");
         return;
     } else {
         const auto &res = response.value();  // または *response
         if (res.hresult != 0) {
-            RCLCPP_ERROR(node_->get_logger(), "Failed to get robot identifier.");
+            RCLCPP_ERROR(node_->get_logger(), "Failed to get robot handler. %d", res.hresult);
             robot_handler_ = -1;
         } else {
             robot_handler_ = static_cast<int16_t>(std::stoi(res.vnt_ret.value));
-            RCLCPP_INFO(node_->get_logger(), "Robot Identifier: %d", robot_handler_);
+            RCLCPP_INFO(node_->get_logger(), "Robot handler: %d", robot_handler_);
         }
     }
-}
-
-bool RC9Controller::change_mode(uint16_t mode)
-{
-    auto response = ros_client_.change_mode(mode);
-    if (!response.has_value()) {
-        RCLCPP_WARN(node_->get_logger(), "Response is empty");
-        return false;
-    } else {
-        const auto &res = response.value();
-        if (res.hresult != 0) {
-            RCLCPP_ERROR(node_->get_logger(), "Failed changing to slave mode.");
-            return false;
-        } else {
-            RCLCPP_INFO(node_->get_logger(), "Changed to slave mode.");
-        }
-    }
-    return true;
 }
 
 void RC9Controller::slave_move(const float* goal)
@@ -156,6 +138,24 @@ void RC9Controller::slave_move(const float* goal)
     {
         return;
     }
+}
+
+bool RC9Controller::change_mode(uint16_t mode)
+{
+    auto response = ros_client_.change_mode(mode);
+    if (!response.has_value()) {
+        RCLCPP_WARN(node_->get_logger(), "Response is empty");
+        return false;
+    } else {
+        const auto &res = response.value();
+        if (res.hresult != 0) {
+            RCLCPP_ERROR(node_->get_logger(), "Failed changing to slave mode.");
+            return false;
+        } else {
+            RCLCPP_INFO(node_->get_logger(), "Changed to slave mode.");
+        }
+    }
+    return true;
 }
 
 bool RC9Controller::set_motor(bool enable)
